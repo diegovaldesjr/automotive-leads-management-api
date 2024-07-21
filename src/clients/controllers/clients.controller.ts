@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
-import { ClientsService } from './clients.service';
-import { CreateClientDto } from './dto/create-client.dto';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { Client } from './entities/client.entity';
+import { ClientsService } from '../services/clients.service';
+import { CreateClientDto } from '../dto/create-client.dto';
+import { CreateMessageDto } from '../dto/create-message.dto';
+import { Client } from '../entities/client.entity';
 
 @Controller('clients')
 export class ClientsController {
@@ -11,11 +11,6 @@ export class ClientsController {
   @Get()
   async findAll(): Promise<Client[]> {
     return this.clientsService.findAll();
-  }
-
-  @Get('clients-to-do-follow-up')
-  async findClientsToDoFollowUp(): Promise<Client[]> {
-    return this.clientsService.findClientsToFollowUp();
   }
 
   @Get(':id')
@@ -34,5 +29,10 @@ export class ClientsController {
     @Body() createMessageDto: CreateMessageDto
   ): Promise<Client> {
     return this.clientsService.addMessage(+id, createMessageDto);
+  }
+
+  @Get(':id/generateMessage')
+  async generateMessage(@Param('id') id: string): Promise<{ text: string }> {
+    return this.clientsService.generateMessage(+id);
   }
 }

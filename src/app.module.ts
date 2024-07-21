@@ -22,6 +22,6 @@ import { Client } from './clients/entities/client.entity';
       synchronize: true,
     }),
     ClientsModule,
-  ],
+  ]
 })
 export class AppModule {}

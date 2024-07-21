@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Client } from './entities/client.entity';
-import { Message } from './entities/message.entity';
-import { Debt } from './entities/debt.entity';
-import { CreateClientDto } from './dto/create-client.dto';
-import { CreateMessageDto } from './dto/create-message.dto';
+import { Client } from '../entities/client.entity';
+import { Message } from '../entities/message.entity';
+import { Debt } from '../entities/debt.entity';
+import { CreateClientDto } from '../dto/create-client.dto';
+import { CreateMessageDto } from '../dto/create-message.dto';
+import { OpenAIService } from './openai.service';
 
 @Injectable()
 export class ClientsService {
@@ -16,6 +17,7 @@ export class ClientsService {
     private messagesRepository: Repository<Message>,
     @InjectRepository(Debt)
     private debtsRepository: Repository<Debt>,
+    private openAIService: OpenAIService,
   ) {}
 
   findAll(): Promise<Client[]> {
@@ -38,24 +40,27 @@ export class ClientsService {
     const client = this.clientsRepository.create({ name, rut });
     await this.clientsRepository.save(client);
 
-    const messageEntities = messages.map(message => {
-      const msg = this.messagesRepository.create({
-        ...message,
-        client,
+    if (messages) {
+      const messageEntities = messages.map(message => {
+        const msg = this.messagesRepository.create({
+          ...message,
+          client,
+        });
+        return msg;
       });
-      return msg;
-    });
+      await this.messagesRepository.save(messageEntities);
+    }
 
-    const debtEntities = debts.map(debt => {
-      const dbt = this.debtsRepository.create({
-        ...debt,
-        client,
+    if (debts) {
+      const debtEntities = debts.map(debt => {
+        const dbt = this.debtsRepository.create({
+          ...debt,
+          client,
+        });
+        return dbt;
       });
-      return dbt;
-    });
-
-    await this.messagesRepository.save(messageEntities);
-    await this.debtsRepository.save(debtEntities);
+      await this.debtsRepository.save(debtEntities);
+    }
 
     return this.findOne(client.id);
   }
@@ -97,5 +102,17 @@ export class ClientsService {
     } catch (error) {
       throw new Error('Error fetching clients for follow-up: ' + error.message);
     }
+  }
+
+  async generateMessage(id: number): Promise<{ text: string }> {
+    const client = await this.findOne(id);
+
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    const generatedMessage = await this.openAIService.generateMessage(client)
+
+    return { text: generatedMessage };
   }
 }
