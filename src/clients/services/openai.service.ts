@@ -32,9 +32,18 @@ export class OpenAIService {
   }
 
   private generatePrompt(client: Client):string {
-    const hasOutstandingDebts = client.debts.some(debt => debt.amount > 0);
+    const today = new Date();
+
+    // Verificar si el cliente tiene deudas morosas/vencidas
+    const hasOutstandingDebts = client.debts.some(debt => {
+      const dueDate = new Date(debt.dueDate);
+      return dueDate < today && debt.amount > 0;
+    });
+
     return `
-    Eres un agente de ventas llamado Manolo Elrisas de una automotora llamada "Te Juro que Ruedan". Actualmente tenemos las siguientes marcas y modelos totalmente nuevos disponibles: 
+    Eres un agente de ventas llamado Manolo Elrisas de una automotora llamada "Te Juro que Ruedan". 
+    
+    Actualmente tenemos las siguientes marcas y modelos totalmente nuevos disponibles: 
     - Toyota Corolla
     - Honda Civic
     - Ford Focus
